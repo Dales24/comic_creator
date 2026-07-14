@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comic Creator — write it, see it drawn</title>
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="logo">◲</span> Comic Creator</div>
+      <div class="actions">
+        <button id="btn-reset" class="btn">Load example</button>
+        <button id="btn-print" class="btn">Print / PDF</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="editor-pane">
+        <label class="editor-label">Your script</label>
+        <textarea id="script" spellcheck="false" aria-label="Comic script"></textarea>
+        <div class="help">
+          <strong>How to write:</strong> start a panel with <code>panel</code>, then add
+          <code>scene:</code>, <code>caption:</code>, <code>say:</code>, <code>sfx:</code>.
+          Use <code>caption[bottom]:</code> to pin a caption low. Set the book's
+          <code>title:</code> and <code>subtitle:</code> at the top.
+          <div class="scenes"><strong>Scenes:</strong> <span id="scene-list"></span></div>
+        </div>
+      </section>
+
+      <section class="book" id="stage"></section>
+    </main>
+
+    <script src="static/sprites.js"></script>
+    <script src="static/scenes.js"></script>
+    <script src="static/comic.js"></script>
+    <script src="static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "comic-creator",
+  "version": "0.1.0",
+  "description": "Write a short script; it renders a comic book live.",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
