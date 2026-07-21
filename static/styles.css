@@ -83,6 +83,34 @@ body {
   margin-bottom: 8px;
 }
 
+.editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.editor-head .editor-label {
+  margin-bottom: 0;
+}
+
+.scene-insert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scene-insert label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.scene-insert .select {
+  padding: 4px 8px;
+  font-size: 12px;
+  max-width: 170px;
+}
+
 #script {
   flex: 1;
   resize: none;
@@ -227,10 +255,261 @@ body {
   font-family: ui-monospace, monospace;
 }
 
+.btn-primary {
+  background: #ffd15c;
+  color: #1a1206;
+  border-color: #ffd15c;
+  font-weight: 700;
+}
+.btn-primary:hover {
+  background: #ffdd80;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── controls bar ────────────────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #10141d;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.theme-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.theme-btn {
+  background: #1b2130;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+}
+.theme-btn:hover {
+  background: #232b3d;
+  transform: translateY(-1px);
+}
+.theme-btn.active {
+  background: #ffd15c;
+  color: #1a1206;
+  border-color: #ffd15c;
+  font-weight: 700;
+}
+
+.select {
+  background: #1b2130;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.btn-story {
+  background: linear-gradient(135deg, #ff6ea8, #c98ad1);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+}
+.btn-story:hover {
+  filter: brightness(1.07);
+}
+
+.layout {
+  height: calc(100vh - 106px); /* topbar + controls */
+}
+
+/* ── animations ──────────────────────────────────────────────────────────── */
+@keyframes ccPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cc-panel {
+  animation: ccPanelIn 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@keyframes ccTwinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+.cc-tw > * {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ccTwinkle 2.4s ease-in-out infinite;
+}
+
+@keyframes ccBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.cc-float > * {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ccBob 3.4s ease-in-out infinite;
+}
+.cc-float > *:nth-child(even) { animation-duration: 4.2s; }
+
+/* floating decorations over the page */
+.cc-decor {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.cc-decor span {
+  position: absolute;
+  bottom: -30px;
+  opacity: 0.85;
+  animation: ccRise linear infinite;
+}
+@keyframes ccRise {
+  0% { transform: translateY(0) rotate(0); opacity: 0; }
+  12% { opacity: 0.9; }
+  100% { transform: translateY(-104vh) rotate(60deg); opacity: 0; }
+}
+
+.book {
+  position: relative;
+}
+
+body.no-anim .cc-panel,
+body.no-anim .cc-tw > *,
+body.no-anim .cc-float > *,
+body.no-anim .cc-decor span {
+  animation: none !important;
+}
+body.no-anim .cc-decor {
+  display: none;
+}
+
+/* ── art-style themes (on the .book stage) ───────────────────────────────── */
+.book[data-theme="burton"] {
+  background: #14121c;
+}
+.book[data-theme="burton"] .cc-splash h1 {
+  color: #cbb7e6;
+  -webkit-text-stroke: 1px #060509;
+  font-family: "Georgia", serif;
+}
+.book[data-theme="burton"] .cc-splash p { color: #9a8fb0; }
+.book[data-theme="burton"] .cc-panel {
+  border-color: #060509;
+  border-width: 4px;
+  box-shadow: 4px 4px 0 rgba(90, 60, 120, 0.4);
+}
+.book[data-theme="burton"] .cc-caption {
+  font-family: "Georgia", serif;
+  letter-spacing: 0.04em;
+}
+
+.book[data-theme="potter"] {
+  background: #e7d6ad;
+}
+.book[data-theme="potter"] .cc-splash h1 {
+  color: #7c1f1f;
+  -webkit-text-stroke: 0;
+  font-family: "Georgia", "Times New Roman", serif;
+  text-shadow: 1px 1px 0 #d9b45a;
+}
+.book[data-theme="potter"] .cc-splash p { color: #5a4326; }
+.book[data-theme="potter"] .cc-panel {
+  border-color: #4a341c;
+  box-shadow: 3px 3px 0 rgba(74, 52, 28, 0.3);
+}
+.book[data-theme="potter"] .cc-caption { font-family: "Georgia", serif; }
+
+.book[data-theme="vangogh"] {
+  background: #12447f;
+}
+.book[data-theme="vangogh"] .cc-splash h1 { color: #ffd15c; }
+.book[data-theme="vangogh"] .cc-splash p { color: #cfe0ff; }
+.book[data-theme="vangogh"] .cc-panel {
+  border-color: #0b2440;
+  box-shadow: 3px 3px 0 rgba(11, 36, 64, 0.5);
+}
+
+.book[data-theme="princess"] {
+  background: #ffe3f1;
+}
+.book[data-theme="princess"] .cc-splash h1 {
+  color: #ff5fa2;
+  -webkit-text-stroke: 1px #fff;
+  text-shadow: 0 2px 6px rgba(255, 95, 162, 0.4);
+}
+.book[data-theme="princess"] .cc-splash p { color: #b3568a; }
+.book[data-theme="princess"] .cc-panel {
+  border-color: #ff8fbf;
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 rgba(255, 143, 191, 0.5);
+}
+.book[data-theme="princess"] .cc-speech {
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+}
+
+.book[data-theme="anime"] {
+  background: #eef4ff;
+}
+.book[data-theme="anime"] .cc-splash h1 {
+  color: #ff4d6d;
+  -webkit-text-stroke: 1.5px #10141d;
+  font-style: italic;
+}
+.book[data-theme="anime"] .cc-splash p { color: #365; }
+.book[data-theme="anime"] .cc-panel {
+  border-color: #10141d;
+  border-width: 4px;
+  box-shadow: 4px 4px 0 rgba(16, 20, 29, 0.35);
+}
+
 /* ── print / PDF ─────────────────────────────────────────────────────────── */
 @media print {
   .topbar,
-  .editor-pane {
+  .controls,
+  .editor-pane,
+  .cc-decor {
     display: none;
   }
   .layout {
@@ -241,5 +520,6 @@ body {
   }
   .cc-panel {
     break-inside: avoid;
+    animation: none;
   }
 }

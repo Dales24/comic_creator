@@ -8,23 +8,50 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand"><span class="logo">◲</span> Comic Creator</div>
+      <div class="brand"><span class="logo">❤</span> Comic Creator</div>
       <div class="actions">
-        <button id="btn-reset" class="btn">Load example</button>
-        <button id="btn-print" class="btn">Print / PDF</button>
+        <label class="toggle">
+          <input type="checkbox" id="chk-anim" checked /> Animations
+        </label>
+        <button id="btn-example" class="btn">Space example</button>
+        <button id="btn-print" class="btn btn-primary">Print / PDF</button>
       </div>
     </header>
 
+    <div class="controls">
+      <div class="control">
+        <span class="control-label">Style</span>
+        <div id="theme-picker" class="theme-picker" role="group" aria-label="Art style"></div>
+      </div>
+      <div class="control">
+        <span class="control-label">Length</span>
+        <select id="length" class="select" aria-label="Comic length">
+          <option value="short">Short · 4 panels</option>
+          <option value="medium" selected>Medium · 7 panels</option>
+          <option value="long">Long · 10 panels</option>
+        </select>
+      </div>
+      <button id="btn-story" class="btn btn-story">✦ New first-year story</button>
+    </div>
+
     <main class="layout">
       <section class="editor-pane">
-        <label class="editor-label">Your script</label>
+        <div class="editor-head">
+          <label class="editor-label" for="script">Your script</label>
+          <div class="scene-insert">
+            <label for="scene-picker">Add a scene →</label>
+            <select id="scene-picker" class="select" aria-label="Insert a scene panel">
+              <option value="" selected>Pick a scene…</option>
+            </select>
+          </div>
+        </div>
         <textarea id="script" spellcheck="false" aria-label="Comic script"></textarea>
         <div class="help">
           <strong>How to write:</strong> start a panel with <code>panel</code>, then add
           <code>scene:</code>, <code>caption:</code>, <code>say:</code>, <code>sfx:</code>.
           Use <code>caption[bottom]:</code> to pin a caption low. Set the book's
-          <code>title:</code> and <code>subtitle:</code> at the top.
-          <div class="scenes"><strong>Scenes:</strong> <span id="scene-list"></span></div>
+          <code>title:</code> and <code>subtitle:</code> at the top. Or use the
+          <strong>Add a scene</strong> menu to drop one in.
         </div>
       </section>
 
@@ -33,6 +60,7 @@
 
     <script src="static/sprites.js"></script>
     <script src="static/scenes.js"></script>
+    <script src="static/themes.js"></script>
     <script src="static/comic.js"></script>
     <script src="static/app.js"></script>
   </body>

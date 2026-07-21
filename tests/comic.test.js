@@ -1,7 +1,13 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseScript, renderPanel, renderComic } = require("../static/comic.js");
+const {
+  parseScript,
+  renderPanel,
+  renderComic,
+  firstYearTemplate,
+} = require("../static/comic.js");
 const { SCENES, list } = require("../static/scenes.js");
+const themes = require("../static/themes.js");
 const sprites = require("../static/sprites.js");
 
 const SAMPLE = `title: SIGNAL
@@ -84,4 +90,63 @@ test("html is escaped so a script can't inject markup", () => {
 
 test("sprites: stars are deterministic for a seed", () => {
   assert.strictEqual(sprites.stars(5, 10), sprites.stars(5, 10));
+});
+
+// ── first-year story + themes ────────────────────────────────────────────────
+test("first-year scenes are registered", () => {
+  for (const s of ["nursery", "first-smile", "first-birthday", "bedtime", "family"]) {
+    assert.ok(list.includes(s), `${s} missing`);
+  }
+});
+
+test("new scenes are registered and render", () => {
+  const { SCENES } = require("../static/scenes.js");
+  for (const s of ["newborn", "peekaboo", "beach-day", "snow-day", "pet-friend", "holiday"]) {
+    assert.ok(SCENES[s], `${s} missing`);
+    assert.ok(!SCENES[s].art(0).includes("NaN"), `${s} has NaN`);
+  }
+});
+
+test("scene picker groups cover every scene exactly once", () => {
+  const { groups, list: all } = require("../static/scenes.js");
+  const grouped = Object.values(groups).flat();
+  assert.strictEqual(grouped.length, all.length, "count mismatch");
+  assert.deepStrictEqual([...grouped].sort(), [...all].sort());
+});
+
+test("firstYearTemplate builds a parseable story of the chosen length", () => {
+  for (const [len, n] of [
+    ["short", 4],
+    ["medium", 7],
+    ["long", 10],
+  ]) {
+    const comic = parseScript(firstYearTemplate(len));
+    assert.strictEqual(comic.panels.length, n, `${len} length`);
+    assert.ok(comic.title.length > 0);
+    // Every generated panel references a real scene.
+    for (const p of comic.panels) assert.ok(SCENES[p.scene], `unknown scene ${p.scene}`);
+  }
+});
+
+test("firstYearTemplate name flows into the title", () => {
+  assert.ok(parseScript(firstYearTemplate("short", "Ava")).title.startsWith("Ava"));
+});
+
+test("a theme wraps panel art in its SVG filter and injects the defs", () => {
+  const html = renderComic(parseScript("panel\n  scene: nursery"), { theme: "vangogh" });
+  assert.ok(html.includes('filter="url(#ccf-vangogh)"'), "art not filtered");
+  assert.ok(html.includes('id="ccf-vangogh"'), "filter defs missing");
+});
+
+test("classic theme applies no filter to the art", () => {
+  const html = renderComic(parseScript("panel\n  scene: nursery"), { theme: "classic" });
+  assert.ok(!html.includes('filter="url(#ccf'));
+});
+
+test("themes: filterId maps ids and rejects classic/unknown", () => {
+  assert.strictEqual(themes.filterId("burton"), "ccf-burton");
+  assert.strictEqual(themes.filterId("classic"), null);
+  assert.strictEqual(themes.filterId("nope"), null);
+  assert.strictEqual(themes.THEMES.length, 6);
+  assert.ok(themes.filterDefs().includes("ccf-princess"));
 });

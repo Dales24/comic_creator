@@ -5,6 +5,7 @@
  */
 const CCS = typeof require !== "undefined" ? require("./sprites.js") : window.CCSprites;
 const CCSc = typeof require !== "undefined" ? require("./scenes.js") : window.CCScenes;
+const CCTh = typeof require !== "undefined" ? require("./themes.js") : window.CCThemes;
 
 const PANEL_KEYS = new Set(["scene", "wide", "caption", "say", "speech", "sfx"]);
 
@@ -50,10 +51,13 @@ function parseScript(text) {
   return comic;
 }
 
-/** Render one parsed panel to an SVG figure. */
-function renderPanel(panel, idx) {
+/** Render one parsed panel to an SVG figure. `filterId` themes the art. */
+function renderPanel(panel, idx, filterId) {
   const scene = CCSc.SCENES[panel.scene] || CCSc.SCENES.space;
-  let inner = scene.art(idx);
+  // The scene art is filtered (painterly/gothic/etc.); balloons + captions stay
+  // crisp on top so words never smear.
+  const art = scene.art(idx);
+  let inner = filterId ? `<g filter="url(#${filterId})">${art}</g>` : art;
 
   for (const cap of panel.captions) inner += CCS.caption(cap.text, cap.pos);
 
@@ -79,21 +83,64 @@ function renderPanel(panel, idx) {
   );
 }
 
-/** Render a whole parsed comic to an HTML string. */
-function renderComic(comic) {
+/** Render a whole parsed comic to an HTML string. `opts.theme` sets the style. */
+function renderComic(comic, opts = {}) {
   const esc = CCS.escapeHtml;
   const title = esc(comic.title || "Untitled");
   const sub = comic.subtitle ? `<p>${esc(comic.subtitle)}</p>` : "";
   const splash = `<header class="cc-splash"><h1>${title}</h1>${sub}</header>`;
+  const defs = CCTh ? CCTh.filterDefs() : "";
 
   if (!comic.panels.length) {
-    return splash + `<p class="cc-empty">No panels yet. Add a <code>panel</code> to your script.</p>`;
+    return defs + splash + `<p class="cc-empty">No panels yet. Add a <code>panel</code> to your script.</p>`;
   }
-  const panels = comic.panels.map(renderPanel).join("");
-  return splash + `<div class="cc-grid">${panels}</div>`;
+  const fid = CCTh ? CCTh.filterId(opts.theme) : null;
+  const panels = comic.panels
+    .map((panel, idx) => renderPanel(panel, idx, fid))
+    .join("");
+  return defs + splash + `<div class="cc-grid">${panels}</div>`;
 }
 
-const CCComic = { parseScript, renderPanel, renderComic };
+// ── First-year story template ─────────────────────────────────────────────────
+// A curated arc of beats; a length picks a subset that still reads start→end.
+const FIRST_YEAR_BEATS = [
+  ["nursery", "The day we brought you home, the whole world got quieter and softer."],
+  ["first-smile", "Then one morning you smiled — and I forgot every sleepless night."],
+  ["bath-time", "Splash! You decided bath time was the best invention ever made."],
+  ["first-food", "You met real food. The food mostly lost."],
+  ["crawling", "You learned to crawl, and suddenly nothing in the house was safe."],
+  ["first-steps", "One… two… three wobbly steps onto your own two feet."],
+  ["park-day", "We took you to meet the world: grass, sky, and a very serious duck."],
+  ["bedtime", "Every night ended the same — tiny hands, enormous dreams."],
+  ["first-birthday", "One whole year. One perfect cake. One very happy mess."],
+  ["family", "You made us a family. Happy first birthday, our love."],
+];
+
+const LENGTHS = {
+  short: [0, 1, 8, 9],
+  medium: [0, 1, 3, 5, 7, 8, 9],
+  long: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+};
+
+/** Build a starter first-year script with the chosen length ("short"|"medium"|"long"). */
+function firstYearTemplate(length = "medium", name = "Her") {
+  const pick = LENGTHS[length] || LENGTHS.medium;
+  const lines = [`title: ${name} First Year`, "subtitle: a year in pictures", ""];
+  for (const i of pick) {
+    const [scene, caption] = FIRST_YEAR_BEATS[i];
+    lines.push("panel", `  scene: ${scene}`, `  caption: ${caption}`, "");
+  }
+  return lines.join("\n");
+}
+
+const CCComic = {
+  parseScript,
+  renderPanel,
+  renderComic,
+  firstYearTemplate,
+  FIRST_YEAR_BEATS,
+  LENGTHS,
+};
 
 if (typeof module !== "undefined" && module.exports) module.exports = CCComic;
 if (typeof window !== "undefined") window.CCComic = CCComic;
