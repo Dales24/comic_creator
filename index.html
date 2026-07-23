@@ -46,9 +46,24 @@
           </div>
         </div>
         <textarea id="script" spellcheck="false" aria-label="Comic script"></textarea>
+        <div class="photos-lib">
+          <div class="photos-head">
+            <strong>Your photos &amp; scenes</strong>
+            <button id="btn-upload" class="btn">＋ Upload image</button>
+            <input id="file-input" type="file" accept="image/*" multiple hidden />
+          </div>
+          <div id="photo-list" class="photo-list"></div>
+          <p class="photos-hint">
+            Upload a photo of your daughter, family, or a background. Then click
+            <em>Person</em> (a floating cutout) or <em>Scene</em> (fills the panel)
+            to drop it in — it takes on your chosen art style.
+          </p>
+        </div>
+
         <div class="help">
           <strong>How to write:</strong> start a panel with <code>panel</code>, then add
-          <code>scene:</code>, <code>caption:</code>, <code>say:</code>, <code>sfx:</code>.
+          <code>scene:</code>, <code>caption:</code>, <code>say:</code>, <code>sfx:</code>,
+          <code>photo:</code>, <code>background:</code>.
           Use <code>caption[bottom]:</code> to pin a caption low. Set the book's
           <code>title:</code> and <code>subtitle:</code> at the top. Or use the
           <strong>Add a scene</strong> menu to drop one in.

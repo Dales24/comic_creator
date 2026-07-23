@@ -19,6 +19,14 @@ you type. It opens ready to tell **a baby's first-year story**, with one-click
 - **Length** — Short (4), Medium (7), or Long (10) panels.
 - **Animations** — panels swoop in, sparkles/hearts/bats drift up per style,
   twinkles pulse. Toggle off anytime (and always off for Print / PDF).
+- **Your own photos** — upload a picture of your daughter, your family, or a
+  backdrop. Drop it in as a **Person** (a floating, animated cutout) or a
+  **Scene** (fills the whole panel). Uploaded photos **take on the chosen art
+  style** too — so her portrait can be painted Van Gogh or drawn anime. Images
+  are downscaled and saved in your browser (nothing is uploaded to a server).
+
+  In the script: `photo: <name>` (optionally `photo[left]:` / `photo[right]:`)
+  drops a person cutout; `background: <name>` fills the panel.
 
 Open `index.html` in a browser (no build step), or serve the folder:
 

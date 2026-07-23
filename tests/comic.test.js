@@ -114,6 +114,54 @@ test("scene picker groups cover every scene exactly once", () => {
   assert.deepStrictEqual([...grouped].sort(), [...all].sort());
 });
 
+// ── uploaded photos & custom scenes ───────────────────────────────────────────
+test("studio scene is registered for photo cutouts", () => {
+  assert.ok(list.includes("studio"));
+});
+
+test("parses photo and background directives with positions", () => {
+  const p = parseScript(
+    "panel\n  background: bg1\n  photo: her\n  photo[left]: dad"
+  ).panels[0];
+  assert.strictEqual(p.background, "bg1");
+  assert.deepStrictEqual(p.photos, [
+    { name: "her", pos: "center" },
+    { name: "dad", pos: "left" },
+  ]);
+});
+
+test("renders an uploaded background image, styled by the theme", () => {
+  const html = renderComic(parseScript("panel\n  background: bg1"), {
+    theme: "vangogh",
+    images: { bg1: "data:image/png;base64,AAA" },
+  });
+  assert.ok(html.includes("<image"), "no <image>");
+  assert.ok(html.includes("data:image/png;base64,AAA"), "href missing");
+  assert.ok(html.includes('filter="url(#ccf-vangogh)"'), "not themed");
+});
+
+test("renders an uploaded person as an animated clipped cutout", () => {
+  const html = renderComic(parseScript("panel\n  scene: studio\n  photo: her"), {
+    images: { her: "data:image/png;base64,BBB" },
+  });
+  assert.ok(html.includes("<clipPath"), "no clip");
+  assert.ok(html.includes('class="cc-float"'), "not animated");
+  assert.ok(html.includes("data:image/png;base64,BBB"), "href missing");
+});
+
+test("a missing uploaded image name warns instead of breaking", () => {
+  const html = renderComic(parseScript("panel\n  background: nope"), { images: {} });
+  assert.ok(html.includes("missing image: nope"));
+});
+
+test("photo hrefs are attribute-escaped", () => {
+  const html = renderComic(parseScript("panel\n  background: b"), {
+    images: { b: 'data:image/png;base64,x"onload="evil' },
+  });
+  assert.ok(!html.includes('"onload="evil'), "unescaped quote in href");
+  assert.ok(html.includes("&quot;onload=&quot;evil"));
+});
+
 test("firstYearTemplate builds a parseable story of the chosen length", () => {
   for (const [len, n] of [
     ["short", 4],

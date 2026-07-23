@@ -361,6 +361,32 @@ function tree(x, y, s = 1) {
   );
 }
 
+// ── Uploaded images (custom scenes + people) ────────────────────────────────
+// Escape a value for an SVG attribute (data: URLs are long but safe to inline).
+function attr(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+// A full-panel background from an uploaded image.
+function photoBackground(href) {
+  return (
+    `<image href="${attr(href)}" x="0" y="0" width="440" height="300" ` +
+    `preserveAspectRatio="xMidYMid slice" class="cc-kb"/>`
+  );
+}
+
+// A round "sticker" cutout of an uploaded photo — a person dropped into the
+// scene. `id` must be unique per panel so the clip paths don't collide.
+function photoCutout(cx, cy, r, href, id) {
+  return (
+    `<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>` +
+    `<image href="${attr(href)}" x="${cx - r}" y="${cy - r}" width="${2 * r}" ` +
+    `height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-width="4"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#0b0f18" stroke-width="1.5"/>`
+  );
+}
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -397,6 +423,9 @@ const CCSprites = {
   snowman,
   dog,
   tree,
+  attr,
+  photoBackground,
+  photoCutout,
 };
 
 if (typeof module !== "undefined" && module.exports) module.exports = CCSprites;

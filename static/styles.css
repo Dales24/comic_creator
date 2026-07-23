@@ -111,6 +111,90 @@ body {
   max-width: 170px;
 }
 
+/* ── uploaded photos library ─────────────────────────────────────────────── */
+.photos-lib {
+  margin-top: 12px;
+}
+.photos-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.photos-head strong {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.photos-head .btn {
+  margin-left: auto;
+}
+.photo-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.photos-empty {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+}
+.photo-card {
+  width: 98px;
+  background: #0f131c;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px;
+}
+.photo-card img {
+  width: 100%;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+  display: block;
+}
+.photo-name {
+  display: block;
+  font-size: 10.5px;
+  color: #8fb4ff;
+  margin: 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.photo-actions {
+  display: flex;
+  gap: 3px;
+}
+.photo-actions button {
+  flex: 1;
+  font-size: 10px;
+  padding: 3px 0;
+  border: 1px solid var(--line);
+  background: #1b2130;
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.photo-actions button:hover {
+  background: #232b3d;
+}
+.photo-actions .del {
+  flex: 0 0 22px;
+  color: #ff9a9a;
+}
+.photos-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+.photos-hint em {
+  color: #ffd88a;
+  font-style: normal;
+}
+
 #script {
   flex: 1;
   resize: none;
@@ -383,6 +467,20 @@ body {
 @keyframes ccBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
+}
+
+/* uploaded background images slowly drift (ken-burns) */
+@keyframes ccKen {
+  from { transform: scale(1); }
+  to { transform: scale(1.09); }
+}
+.cc-kb {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ccKen 16s ease-in-out infinite alternate;
+}
+body.no-anim .cc-kb {
+  animation: none;
 }
 .cc-float > * {
   transform-box: fill-box;

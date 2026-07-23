@@ -117,6 +117,16 @@ const SCENES = {
   },
 
   // ── First-year (baby) scenes ──────────────────────────────────────────────
+  // A soft, neutral backdrop — good behind an uploaded photo cutout.
+  studio: {
+    wide: false,
+    bubble: TOP_BUBBLE,
+    sfx: { x: 360, y: 210 },
+    art: (i) =>
+      bg(i, "#fff2f8", "#ffe0ef") +
+      `<g class="cc-float">${CC.heart(70, 80, 9, "#ffb3c6")}${CC.heart(372, 100, 8, "#ff8fb3")}${CC.twinkle(120, 220, 5, "#ffd884")}</g>`,
+  },
+
   nursery: {
     wide: false,
     bubble: TOP_BUBBLE,
@@ -341,10 +351,10 @@ const SCENES = {
 // Grouped for the scene picker (order = a natural first-year arc).
 const GROUPS = {
   "First year": [
-    "nursery", "newborn", "first-smile", "peekaboo", "bath-time", "tummy-time",
-    "first-food", "playtime", "story-time", "crawling", "first-steps",
-    "pet-friend", "park-day", "beach-day", "snow-day", "first-birthday",
-    "holiday", "bedtime", "family",
+    "studio", "nursery", "newborn", "first-smile", "peekaboo", "bath-time",
+    "tummy-time", "first-food", "playtime", "story-time", "crawling",
+    "first-steps", "pet-friend", "park-day", "beach-day", "snow-day",
+    "first-birthday", "holiday", "bedtime", "family",
   ],
   "Space (SIGNAL)": [
     "space", "drift", "listen", "turn", "earth-call", "reply", "answered",
