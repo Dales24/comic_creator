@@ -66,30 +66,15 @@ const PHOTO_POS = {
   right: { x: 312, y: 190, r: 64 },
 };
 
-// A repeating SMIL transform (native SVG — animates reliably in every browser,
-// even inside filters, unlike CSS transforms on SVG).
-function _anim(type, values, dur, begin) {
-  return (
-    `<animateTransform attributeName="transform" attributeType="XML" type="${type}" ` +
-    `values="${values}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite" additive="sum"/>`
-  );
+// Photos animate via CSS classes on an UN-filtered wrapper group (the theme
+// filter sits on the <image> itself). CSS animations run reliably on SVG
+// injected through innerHTML — unlike SMIL — and don't freeze the way CSS does
+// when it's applied inside a filtered element. `body.no-anim` / print disable them.
+function _floatWrap(inner, animate) {
+  return `<g${animate ? ' class="cc-anim-float"' : ""}>${inner}</g>`;
 }
-
-// A floating "sticker" wiggle for an uploaded person cutout.
-function _floatAnim(cx, cy, i) {
-  return (
-    _anim("translate", "0 0; 0 -8; 0 0", 3 + i * 0.4, i * 0.5) +
-    _anim("rotate", `-2.5 ${cx} ${cy}; 2.5 ${cx} ${cy}; -2.5 ${cx} ${cy}`, 5 + i * 0.4, i * 0.5)
-  );
-}
-
-// A slow ken-burns zoom about a background's centre.
-function _kenBurns(inner) {
-  return (
-    `<g transform="translate(220 150)"><g>` +
-    _anim("scale", "1; 1.08; 1", 18, 0) +
-    `<g transform="translate(-220 -150)">${inner}</g></g></g>`
-  );
+function _kenWrap(inner, animate) {
+  return `<g${animate ? ' class="cc-anim-ken"' : ""}>${inner}</g>`;
 }
 
 // The default cartoon drawn for a figure when no photo is cast to its role. The
@@ -122,8 +107,7 @@ function renderPanel(panel, idx, theme, images = {}, animate = true, cast = {}) 
   // scene art.
   let backdrop;
   if (panel.background && images[panel.background]) {
-    const img = CCS.photoBackground(images[panel.background], fid);
-    backdrop = animate ? _kenBurns(img) : img;
+    backdrop = _kenWrap(CCS.photoBackground(images[panel.background], fid), animate);
   } else {
     if (panel.background) missing.push(panel.background);
     backdrop = fid ? `<g filter="url(#${fid})">${scene.art(idx)}</g>` : scene.art(idx);
@@ -136,7 +120,7 @@ function renderPanel(panel, idx, theme, images = {}, animate = true, cast = {}) 
     const imgName = cast[fig.role];
     if (imgName && images[imgName]) {
       const cut = CCS.photoCutout(fig.x, fig.y, fig.r, images[imgName], `fig${idx}-${i}`, fid);
-      figures += `<g>${animate ? _floatAnim(fig.x, fig.y, i) : ""}${cut}</g>`;
+      figures += _floatWrap(cut, animate);
     } else {
       const sprite = _figureSprite(fig);
       figures += fid ? `<g filter="url(#${fid})">${sprite}</g>` : sprite;
@@ -154,7 +138,7 @@ function renderPanel(panel, idx, theme, images = {}, animate = true, cast = {}) 
     const cx = a.x + i * 18;
     const cy = a.y - i * 6;
     const cut = CCS.photoCutout(cx, cy, a.r, href, `ph${idx}-${i}`, fid);
-    cutouts += `<g>${animate ? _floatAnim(cx, cy, i) : ""}${cut}</g>`;
+    cutouts += _floatWrap(cut, animate);
   });
 
   let inner = fdefs + backdrop + figures + cutouts;

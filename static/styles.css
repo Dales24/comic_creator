@@ -126,8 +126,11 @@ body {
   letter-spacing: 0.06em;
   color: var(--muted);
 }
-.photos-head .btn {
+.photos-head .cartoon-toggle {
   margin-left: auto;
+}
+.photos-head .btn {
+  margin-left: 8px;
 }
 .photo-list {
   display: flex;
@@ -488,17 +491,27 @@ body {
   50% { transform: translateY(-5px); }
 }
 
-/* uploaded background images slowly drift (ken-burns) */
-@keyframes ccKen {
-  from { transform: scale(1); }
-  to { transform: scale(1.09); }
+/* uploaded photos: cast people bob/wiggle, backgrounds drift (ken-burns) */
+@keyframes ccPhotoFloat {
+  0%, 100% { transform: translateY(0) rotate(-2.2deg); }
+  50% { transform: translateY(-9px) rotate(2.2deg); }
 }
-.cc-kb {
+.cc-anim-float {
   transform-box: fill-box;
   transform-origin: center;
-  animation: ccKen 16s ease-in-out infinite alternate;
+  animation: ccPhotoFloat 3.2s ease-in-out infinite;
 }
-body.no-anim .cc-kb {
+@keyframes ccPhotoKen {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+.cc-anim-ken {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ccPhotoKen 16s ease-in-out infinite alternate;
+}
+body.no-anim .cc-anim-float,
+body.no-anim .cc-anim-ken {
   animation: none;
 }
 .cc-float > * {
@@ -635,7 +648,9 @@ body.no-anim .cc-decor {
   .book {
     overflow: visible;
   }
-  .cc-panel {
+  .cc-panel,
+  .cc-anim-float,
+  .cc-anim-ken {
     break-inside: avoid;
     animation: none;
   }

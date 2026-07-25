@@ -11,6 +11,7 @@
     anim: "cc_anim_v1",
     images: "cc_images_v1",
     cast: "cc_cast_v1",
+    cartoon: "cc_cartoon_v1",
   };
 
   // Which uploaded photo plays each character role.
@@ -54,13 +55,19 @@ panel
   let length = localStorage.getItem(KEY.length) || "medium";
   let animOn = localStorage.getItem(KEY.anim) !== "off";
 
-  // Uploaded images: name → data URL. Persisted (downscaled) in the browser.
-  let images = {};
+  // Uploaded originals (raw, downscaled) are the source of truth and persist in
+  // the browser. `images` is what the comic actually draws: the cartoonified
+  // version when Cartoonify is on, else the original. Cartoons are cached in
+  // memory (recomputed on load) so we don't bloat storage.
+  let originals = {};
   try {
-    images = JSON.parse(localStorage.getItem(KEY.images) || "{}");
+    originals = JSON.parse(localStorage.getItem(KEY.images) || "{}");
   } catch {
-    images = {};
+    originals = {};
   }
+  const cartoons = {};
+  let cartoonOn = localStorage.getItem(KEY.cartoon) !== "off";
+  let images = {};
 
   // Casting: role → uploaded image name (baby/parent1/parent2/pet).
   let cast = {};
@@ -105,12 +112,132 @@ panel
   const fileInput = document.getElementById("file-input");
   const photoList = document.getElementById("photo-list");
 
-  function saveImages() {
+  function saveOriginals() {
     try {
-      localStorage.setItem(KEY.images, JSON.stringify(images));
+      localStorage.setItem(KEY.images, JSON.stringify(originals));
     } catch {
       // Storage full — images stay for this session but won't persist.
     }
+  }
+
+  const clamp255 = (v) => (v < 0 ? 0 : v > 255 ? 255 : v);
+
+  // In-place 3×3 box blur of a single-channel Float32 plane.
+  function blur3(a, w, h) {
+    const src = a.slice();
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const o = y * w + x;
+        a[o] =
+          (src[o - w - 1] + src[o - w] + src[o - w + 1] +
+            src[o - 1] + src[o] + src[o + 1] +
+            src[o + w - 1] + src[o + w] + src[o + w + 1]) / 9;
+      }
+    }
+  }
+
+  // Turn a photo into a cartoon drawing: heavily smooth colour into flat cel
+  // regions, flatten to a few bands with punched-up colour, then ink bold,
+  // continuous outlines. Pure canvas — nothing leaves the browser.
+  function cartoonify(dataURL) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const w = img.width;
+        const h = img.height;
+        const n = w * h;
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const id = ctx.getImageData(0, 0, w, h);
+        const d = id.data;
+
+        // Grayscale for edges; blur once so lines follow real contours, not noise.
+        const gray = new Float32Array(n);
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+          gray[p] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+        }
+        blur3(gray, w, h);
+
+        // Smooth colour into flat regions: three box-blur passes per channel,
+        // so posterizing gives clean cel shapes instead of speckle.
+        const ch = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
+        for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+          ch[0][p] = d[i];
+          ch[1][p] = d[i + 1];
+          ch[2][p] = d[i + 2];
+        }
+        for (let pass = 0; pass < 3; pass++)
+          for (let k = 0; k < 3; k++) blur3(ch[k], w, h);
+
+        // Flatten to a few colour bands, with a saturation boost.
+        const levels = 4;
+        const step = 255 / (levels - 1);
+        for (let p = 0; p < n; p++) {
+          let r = ch[0][p], g = ch[1][p], b = ch[2][p];
+          const avg = (r + g + b) / 3;
+          r = avg + (r - avg) * 1.45;
+          g = avg + (g - avg) * 1.45;
+          b = avg + (b - avg) * 1.45;
+          const i = p * 4;
+          d[i] = Math.round(clamp255(r) / step) * step;
+          d[i + 1] = Math.round(clamp255(g) / step) * step;
+          d[i + 2] = Math.round(clamp255(b) / step) * step;
+        }
+
+        // Detect edges (Sobel on the blurred grayscale)...
+        const edge = new Uint8Array(n);
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const o = y * w + x;
+            const gx =
+              -gray[o - w - 1] - 2 * gray[o - 1] - gray[o + w - 1] +
+              gray[o - w + 1] + 2 * gray[o + 1] + gray[o + w + 1];
+            const gy =
+              -gray[o - w - 1] - 2 * gray[o - w] - gray[o - w + 1] +
+              gray[o + w - 1] + 2 * gray[o + w] + gray[o + w + 1];
+            if (gx * gx + gy * gy > 2400) edge[o] = 1;
+          }
+        }
+        // ...then thicken them (dilate 1px) so the ink reads as bold, unbroken lines.
+        const ink = new Uint8Array(n);
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const o = y * w + x;
+            if (edge[o] || edge[o - 1] || edge[o + 1] || edge[o - w] || edge[o + w])
+              ink[o] = 1;
+          }
+        }
+        for (let p = 0; p < n; p++) {
+          if (ink[p]) {
+            const i = p * 4;
+            d[i] = d[i + 1] = d[i + 2] = 18;
+          }
+        }
+
+        ctx.putImageData(id, 0, 0);
+        resolve(c.toDataURL("image/jpeg", 0.9));
+      };
+      img.onerror = () => resolve(dataURL); // fall back to the original
+      img.src = dataURL;
+    });
+  }
+
+  // Rebuild the render map from the originals (cartoonified or not).
+  async function rebuildImages() {
+    images = {};
+    for (const name of Object.keys(originals)) {
+      if (cartoonOn) {
+        if (!cartoons[name]) cartoons[name] = await cartoonify(originals[name]);
+        images[name] = cartoons[name];
+      } else {
+        images[name] = originals[name];
+      }
+    }
+    renderLibrary();
+    render();
   }
 
   function slug(s) {
@@ -121,9 +248,9 @@ panel
   }
 
   function uniqueName(base) {
-    if (!images[base]) return base;
+    if (!originals[base]) return base;
     let i = 2;
-    while (images[`${base}-${i}`]) i++;
+    while (originals[`${base}-${i}`]) i++;
     return `${base}-${i}`;
   }
 
@@ -170,13 +297,14 @@ panel
 
   function renderLibrary() {
     photoList.innerHTML = "";
-    const names = Object.keys(images);
+    const names = Object.keys(originals);
     if (!names.length) {
       photoList.innerHTML = `<span class="photos-empty">No images yet.</span>`;
       return;
     }
     for (const name of names) {
       const current = roleOf(name);
+      const thumb = images[name] || originals[name];
       const options =
         `<option value="">Cast as…</option>` +
         ROLES.map(
@@ -185,7 +313,7 @@ panel
       const card = document.createElement("div");
       card.className = "photo-card" + (current ? " cast" : "");
       card.innerHTML =
-        `<img src="${images[name]}" alt="${name}" />` +
+        `<img src="${thumb}" alt="${name}" />` +
         `<span class="photo-name" title="${name}">${name}</span>` +
         `<select class="cast-select" aria-label="Cast ${name}">${options}</select>` +
         `<div class="photo-actions">` +
@@ -199,9 +327,11 @@ panel
       card.querySelector('[data-act="scene"]').onclick = () =>
         insertText(`\npanel\n  background: ${name}\n  caption: \n`);
       card.querySelector('[data-act="del"]').onclick = () => {
+        delete originals[name];
+        delete cartoons[name];
         delete images[name];
         for (const r of ROLES) if (cast[r.id] === name) delete cast[r.id];
-        saveImages();
+        saveOriginals();
         saveCast();
         renderLibrary();
         render();
@@ -215,18 +345,25 @@ panel
     for (const file of fileInput.files) {
       if (!file.type.startsWith("image/")) continue;
       try {
-        images[uniqueName(slug(file.name))] = await downscale(file);
+        originals[uniqueName(slug(file.name))] = await downscale(file);
       } catch {
         /* skip unreadable file */
       }
     }
     fileInput.value = "";
-    saveImages();
-    renderLibrary();
-    render();
+    saveOriginals();
+    await rebuildImages(); // cartoonify (if on) + re-render
   });
 
-  renderLibrary();
+  const cartoonChk = document.getElementById("chk-cartoon");
+  if (cartoonChk) {
+    cartoonChk.checked = cartoonOn;
+    cartoonChk.addEventListener("change", () => {
+      cartoonOn = cartoonChk.checked;
+      localStorage.setItem(KEY.cartoon, cartoonOn ? "on" : "off");
+      rebuildImages();
+    });
+  }
 
   // ── theme picker ────────────────────────────────────────────────────────────
   for (const t of window.CCThemes.THEMES) {
@@ -344,4 +481,5 @@ panel
 
   markActiveTheme();
   render();
+  rebuildImages(); // cartoonify saved photos + fill the library, then re-render
 })();

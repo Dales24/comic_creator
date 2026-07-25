@@ -141,12 +141,12 @@ test("renders an uploaded background image, styled by the theme", () => {
   assert.ok(html.includes('filter="url(#ccf-vangogh-0)"'), "not themed");
 });
 
-test("renders an uploaded person as an animated (SMIL) clipped cutout", () => {
+test("renders an uploaded person as an animated clipped cutout", () => {
   const html = renderComic(parseScript("panel\n  scene: studio\n  photo: her"), {
     images: { her: "data:image/png;base64,BBB" },
   });
   assert.ok(html.includes("<clipPath"), "no clip");
-  assert.ok(html.includes("<animateTransform"), "not animated");
+  assert.ok(html.includes("cc-anim-float"), "not animated");
   assert.ok(html.includes("data:image/png;base64,BBB"), "href missing");
 });
 
@@ -156,7 +156,7 @@ test("animate:false renders photos without motion", () => {
     animate: false,
   });
   assert.ok(html.includes("data:image/png;base64,BBB"), "photo missing");
-  assert.ok(!html.includes("<animateTransform"), "should have no motion");
+  assert.ok(!html.includes("cc-anim-float"), "should have no motion");
 });
 
 test("a photo lands on the scene's own person anchor", () => {
@@ -187,7 +187,7 @@ test("casting a photo to a role replaces the cartoon with the animated photo", (
   });
   assert.ok(html.includes("data:image/png;base64,AVA"), "photo not used");
   assert.ok(html.includes("<clipPath"), "photo not a cutout");
-  assert.ok(html.includes("<animateTransform"), "photo not animated");
+  assert.ok(html.includes("cc-anim-float"), "photo not animated");
   assert.ok(!html.includes("#ffe0c2"), "cartoon baby still drawn");
 });
 
