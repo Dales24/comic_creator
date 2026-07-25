@@ -367,21 +367,32 @@ function attr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
-// A full-panel background from an uploaded image.
-function photoBackground(href) {
+// Both href and the (deprecated but Safari-required) xlink:href, so the image
+// loads across every browser.
+function imgHref(href) {
+  const h = attr(href);
+  return `href="${h}" xlink:href="${h}"`;
+}
+
+// A full-panel background from an uploaded image. The theme filter (if any) is
+// on the <image>; the engine wraps this in a SMIL ken-burns group so it drifts.
+function photoBackground(href, filterId) {
+  const f = filterId ? ` filter="url(#${filterId})"` : "";
   return (
-    `<image href="${attr(href)}" x="0" y="0" width="440" height="300" ` +
-    `preserveAspectRatio="xMidYMid slice" class="cc-kb"/>`
+    `<image ${imgHref(href)} x="0" y="0" width="440" height="300" ` +
+    `preserveAspectRatio="xMidYMid slice"${f}/>`
   );
 }
 
 // A round "sticker" cutout of an uploaded photo — a person dropped into the
-// scene. `id` must be unique per panel so the clip paths don't collide.
-function photoCutout(cx, cy, r, href, id) {
+// scene. The filter is on the <image>; the caller wraps this in the animated
+// (un-filtered) group. `id` must be unique per panel so clip paths don't clash.
+function photoCutout(cx, cy, r, href, id, filterId) {
+  const f = filterId ? ` filter="url(#${filterId})"` : "";
   return (
     `<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>` +
-    `<image href="${attr(href)}" x="${cx - r}" y="${cy - r}" width="${2 * r}" ` +
-    `height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/>` +
+    `<image ${imgHref(href)} x="${cx - r}" y="${cy - r}" width="${2 * r}" ` +
+    `height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"${f}/>` +
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-width="4"/>` +
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#0b0f18" stroke-width="1.5"/>`
   );

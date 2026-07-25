@@ -10,7 +10,16 @@
     length: "cc_length_v1",
     anim: "cc_anim_v1",
     images: "cc_images_v1",
+    cast: "cc_cast_v1",
   };
+
+  // Which uploaded photo plays each character role.
+  const ROLES = [
+    { id: "baby", label: "Baby" },
+    { id: "parent1", label: "Parent 1" },
+    { id: "parent2", label: "Parent 2" },
+    { id: "pet", label: "Pet" },
+  ];
 
   const SPACE_EXAMPLE = `title: SIGNAL
 subtitle: a very short story
@@ -51,6 +60,14 @@ panel
     images = JSON.parse(localStorage.getItem(KEY.images) || "{}");
   } catch {
     images = {};
+  }
+
+  // Casting: role → uploaded image name (baby/parent1/parent2/pet).
+  let cast = {};
+  try {
+    cast = JSON.parse(localStorage.getItem(KEY.cast) || "{}");
+  } catch {
+    cast = {};
   }
 
   editor.value =
@@ -130,6 +147,27 @@ panel
     });
   }
 
+  function saveCast() {
+    try {
+      localStorage.setItem(KEY.cast, JSON.stringify(cast));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // The role an image is currently cast as, or "".
+  function roleOf(name) {
+    return ROLES.find((r) => cast[r.id] === name)?.id || "";
+  }
+
+  function castImage(name, role) {
+    for (const r of ROLES) if (cast[r.id] === name) delete cast[r.id]; // one role max
+    if (role) cast[role] = name; // takes the role from whoever had it
+    saveCast();
+    renderLibrary();
+    render();
+  }
+
   function renderLibrary() {
     photoList.innerHTML = "";
     const names = Object.keys(images);
@@ -138,23 +176,33 @@ panel
       return;
     }
     for (const name of names) {
+      const current = roleOf(name);
+      const options =
+        `<option value="">Cast as…</option>` +
+        ROLES.map(
+          (r) => `<option value="${r.id}"${r.id === current ? " selected" : ""}>${r.label}</option>`
+        ).join("");
       const card = document.createElement("div");
-      card.className = "photo-card";
+      card.className = "photo-card" + (current ? " cast" : "");
       card.innerHTML =
         `<img src="${images[name]}" alt="${name}" />` +
         `<span class="photo-name" title="${name}">${name}</span>` +
+        `<select class="cast-select" aria-label="Cast ${name}">${options}</select>` +
         `<div class="photo-actions">` +
         `<button data-act="person">Person</button>` +
         `<button data-act="scene">Scene</button>` +
         `<button data-act="del" class="del" title="Delete">×</button>` +
         `</div>`;
+      card.querySelector(".cast-select").onchange = (e) => castImage(name, e.target.value);
       card.querySelector('[data-act="person"]').onclick = () =>
         insertText(`\npanel\n  scene: studio\n  photo: ${name}\n  caption: \n`);
       card.querySelector('[data-act="scene"]').onclick = () =>
         insertText(`\npanel\n  background: ${name}\n  caption: \n`);
       card.querySelector('[data-act="del"]').onclick = () => {
         delete images[name];
+        for (const r of ROLES) if (cast[r.id] === name) delete cast[r.id];
         saveImages();
+        saveCast();
         renderLibrary();
         render();
       };
@@ -234,7 +282,9 @@ panel
   // ── render ──────────────────────────────────────────────────────────────────
   function render() {
     const comic = window.CCComic.parseScript(editor.value);
-    stage.innerHTML = window.CCComic.renderComic(comic, { theme, images });
+    stage.innerHTML = window.CCComic.renderComic(comic, {
+      theme, images, animate: animOn, cast,
+    });
     stage.dataset.theme = theme;
     // Stagger each panel's entrance animation.
     stage.querySelectorAll(".cc-panel").forEach((p, i) => {
@@ -251,8 +301,19 @@ panel
   });
 
   lengthSel.addEventListener("change", () => {
+    const target = window.CCComic.lengthCount(lengthSel.value);
+    const current = window.CCComic.parseScript(editor.value).panels.length;
+    if (
+      target < current &&
+      !confirm(`Shorten to ${target} panels? This removes the last ${current - target}.`)
+    ) {
+      lengthSel.value = length; // revert
+      return;
+    }
     length = lengthSel.value;
     localStorage.setItem(KEY.length, length);
+    editor.value = window.CCComic.resizeScript(editor.value, target);
+    render();
   });
 
   animChk.addEventListener("change", () => {

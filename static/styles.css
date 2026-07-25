@@ -163,6 +163,25 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.photo-card.cast {
+  border-color: #ff8fbf;
+  box-shadow: 0 0 0 1px #ff8fbf inset;
+}
+.cast-select {
+  width: 100%;
+  margin-bottom: 4px;
+  font-size: 10.5px;
+  padding: 3px 4px;
+  border: 1px solid var(--line);
+  background: #14181f;
+  color: var(--text);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.photo-card.cast .cast-select {
+  border-color: #ff8fbf;
+  color: #ffc7de;
+}
 .photo-actions {
   display: flex;
   gap: 3px;

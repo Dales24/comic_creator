@@ -53,52 +53,111 @@ function parseScript(text) {
     else if (key === "say" || key === "speech") panel.says.push(value);
     else if (key === "sfx") panel.sfx.push(value);
     else if (key === "background") panel.background = value;
-    else if (key === "photo")
-      panel.photos.push({ name: value, pos: option || "center" });
+    else if (key === "photo") panel.photos.push({ name: value, pos: option || null });
   }
   return comic;
 }
 
-// Where photo cutouts sit in a panel.
+// Explicit photo corners (used when the writer forces `photo[left]:` etc.);
+// otherwise a photo lands on the scene's own person anchor.
 const PHOTO_POS = {
-  left: { x: 132, y: 188, r: 66 },
-  center: { x: 220, y: 178, r: 84 },
-  right: { x: 310, y: 188, r: 66 },
+  left: { x: 128, y: 190, r: 64 },
+  center: { x: 220, y: 168, r: 86 },
+  right: { x: 312, y: 190, r: 64 },
 };
 
+// A repeating SMIL transform (native SVG — animates reliably in every browser,
+// even inside filters, unlike CSS transforms on SVG).
+function _anim(type, values, dur, begin) {
+  return (
+    `<animateTransform attributeName="transform" attributeType="XML" type="${type}" ` +
+    `values="${values}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite" additive="sum"/>`
+  );
+}
+
+// A floating "sticker" wiggle for an uploaded person cutout.
+function _floatAnim(cx, cy, i) {
+  return (
+    _anim("translate", "0 0; 0 -8; 0 0", 3 + i * 0.4, i * 0.5) +
+    _anim("rotate", `-2.5 ${cx} ${cy}; 2.5 ${cx} ${cy}; -2.5 ${cx} ${cy}`, 5 + i * 0.4, i * 0.5)
+  );
+}
+
+// A slow ken-burns zoom about a background's centre.
+function _kenBurns(inner) {
+  return (
+    `<g transform="translate(220 150)"><g>` +
+    _anim("scale", "1; 1.08; 1", 18, 0) +
+    `<g transform="translate(-220 -150)">${inner}</g></g></g>`
+  );
+}
+
+// The default cartoon drawn for a figure when no photo is cast to its role. The
+// figure's (x, y) is the head/cutout centre, so each sprite is offset to land
+// its head there.
+function _figureSprite(fig) {
+  const s = fig.s || 1;
+  if (fig.role && fig.role.indexOf("parent") === 0) return CCS.kid(fig.x, fig.y + 34 * s, s);
+  if (fig.role === "pet") return CCS.dog(fig.x - 16 * s, fig.y + 8 * s, s);
+  return CCS.baby(fig.x, fig.y, s, fig.mood);
+}
+
 /**
- * Render one parsed panel to an SVG figure. `filterId` themes the art;
- * `images` maps uploaded names to data URLs (for `background:` and `photo:`).
+ * Render one parsed panel to an SVG figure. `theme` styles the art (a per-panel
+ * SVG filter); `images` maps uploaded names to data URLs; `animate` toggles the
+ * SMIL motion on uploaded photos.
  */
-function renderPanel(panel, idx, filterId, images = {}) {
+function renderPanel(panel, idx, theme, images = {}, animate = true, cast = {}) {
   const scene = CCSc.SCENES[panel.scene] || CCSc.SCENES.space;
   const missing = [];
 
-  // Backdrop: an uploaded background image, else the scene art.
+  // The theme filter lives in THIS panel's <svg> under a unique id — SVG
+  // filters only resolve within their own <svg>. It's applied to the leaf
+  // <image>/scene, so the animation wrappers around them stay un-filtered.
+  const themed = CCTh && CCTh.hasFilter(theme);
+  const fid = themed ? `ccf-${theme}-${idx}` : null;
+  const fdefs = themed ? `<defs>${CCTh.filterMarkup(theme, fid)}</defs>` : "";
+
+  // Backdrop: an uploaded background image (with a ken-burns drift), else the
+  // scene art.
   let backdrop;
   if (panel.background && images[panel.background]) {
-    backdrop = CCS.photoBackground(images[panel.background]);
+    const img = CCS.photoBackground(images[panel.background], fid);
+    backdrop = animate ? _kenBurns(img) : img;
   } else {
     if (panel.background) missing.push(panel.background);
-    backdrop = scene.art(idx);
+    backdrop = fid ? `<g filter="url(#${fid})">${scene.art(idx)}</g>` : scene.art(idx);
   }
 
-  // Uploaded people as animated cutouts on top of the backdrop.
+  // Cast figures: each scene slot is either the cast person's photo (floating)
+  // or the default cartoon, styled to match.
+  let figures = "";
+  (scene.figures || []).forEach((fig, i) => {
+    const imgName = cast[fig.role];
+    if (imgName && images[imgName]) {
+      const cut = CCS.photoCutout(fig.x, fig.y, fig.r, images[imgName], `fig${idx}-${i}`, fid);
+      figures += `<g>${animate ? _floatAnim(fig.x, fig.y, i) : ""}${cut}</g>`;
+    } else {
+      const sprite = _figureSprite(fig);
+      figures += fid ? `<g filter="url(#${fid})">${sprite}</g>` : sprite;
+    }
+  });
+
+  // Manual `photo:` people, placed on the scene's person anchor (crib, hill,
+  // tub…) unless the writer forces a corner.
+  const base = CCSc.personAnchor(panel.scene);
   let cutouts = "";
   (panel.photos || []).forEach((p, i) => {
     const href = images[p.name];
     if (!href) return missing.push(p.name);
-    const a = PHOTO_POS[p.pos] || PHOTO_POS.center;
-    const dx = i * 16;
-    cutouts += `<g>${CCS.photoCutout(a.x + dx, a.y - i * 4, a.r, href, `ph${idx}-${i}`)}</g>`;
+    const a = p.pos && PHOTO_POS[p.pos] ? PHOTO_POS[p.pos] : base;
+    const cx = a.x + i * 18;
+    const cy = a.y - i * 6;
+    const cut = CCS.photoCutout(cx, cy, a.r, href, `ph${idx}-${i}`, fid);
+    cutouts += `<g>${animate ? _floatAnim(cx, cy, i) : ""}${cut}</g>`;
   });
-  if (cutouts) cutouts = `<g class="cc-float">${cutouts}</g>`;
 
-  // The backdrop + cutouts are filtered (painterly/gothic/…) so an uploaded
-  // photo takes on the chosen style; balloons + captions stay crisp on top.
-  const styled = backdrop + cutouts;
-  let inner = filterId ? `<g filter="url(#${filterId})">${styled}</g>` : styled;
-
+  let inner = fdefs + backdrop + figures + cutouts;
   for (const cap of panel.captions) inner += CCS.caption(cap.text, cap.pos);
 
   const b = scene.bubble;
@@ -120,7 +179,8 @@ function renderPanel(panel, idx, filterId, images = {}) {
   return (
     `<figure class="cc-panel${wide ? " wide" : ""}">` +
     `<svg viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" class="cc-svg" ` +
-    `xmlns="http://www.w3.org/2000/svg">${inner}${warn}</svg>` +
+    `xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">` +
+    `${inner}${warn}</svg>` +
     `<figcaption class="cc-num">${idx + 1}</figcaption></figure>`
   );
 }
@@ -131,17 +191,18 @@ function renderComic(comic, opts = {}) {
   const title = esc(comic.title || "Untitled");
   const sub = comic.subtitle ? `<p>${esc(comic.subtitle)}</p>` : "";
   const splash = `<header class="cc-splash"><h1>${title}</h1>${sub}</header>`;
-  const defs = CCTh ? CCTh.filterDefs() : "";
 
   if (!comic.panels.length) {
-    return defs + splash + `<p class="cc-empty">No panels yet. Add a <code>panel</code> to your script.</p>`;
+    return splash + `<p class="cc-empty">No panels yet. Add a <code>panel</code> to your script.</p>`;
   }
-  const fid = CCTh ? CCTh.filterId(opts.theme) : null;
+  const theme = opts.theme;
   const images = opts.images || {};
+  const animate = opts.animate !== false;
+  const cast = opts.cast || {};
   const panels = comic.panels
-    .map((panel, idx) => renderPanel(panel, idx, fid, images))
+    .map((panel, idx) => renderPanel(panel, idx, theme, images, animate, cast))
     .join("");
-  return defs + splash + `<div class="cc-grid">${panels}</div>`;
+  return splash + `<div class="cc-grid">${panels}</div>`;
 }
 
 // ── First-year story template ─────────────────────────────────────────────────
@@ -176,11 +237,73 @@ function firstYearTemplate(length = "medium", name = "Her") {
   return lines.join("\n");
 }
 
+/** How many panels a length name means (short=4, medium=7, long=10). */
+function lengthCount(name) {
+  return (LENGTHS[name] || LENGTHS.medium).length;
+}
+
+// Split a script into its preamble (title/subtitle lines) and per-panel blocks.
+function splitPanels(text) {
+  const preamble = [];
+  const blocks = [];
+  let current = null;
+  for (const line of String(text).split(/\r?\n/)) {
+    if (line.trim().toLowerCase() === "panel") {
+      if (current) blocks.push(current);
+      current = [line];
+    } else if (current) {
+      current.push(line);
+    } else {
+      preamble.push(line);
+    }
+  }
+  if (current) blocks.push(current);
+  return { preamble, blocks };
+}
+
+function _trimTail(arr) {
+  const out = arr.slice();
+  while (out.length && out[out.length - 1].trim() === "") out.pop();
+  return out;
+}
+
+/**
+ * Resize a script to `target` panels: drop the extras when shortening (keeping
+ * your first panels and their edits), or append fresh first-year beats when
+ * lengthening. Pure — the editor calls it, the tests check it.
+ */
+function resizeScript(text, target) {
+  const { preamble, blocks } = splitPanels(text);
+  const kept = blocks.slice(0, target);
+
+  if (kept.length < target) {
+    const used = new Set();
+    for (const b of blocks) {
+      const m = b.join("\n").match(/scene:\s*([a-z0-9-]+)/i);
+      if (m) used.add(m[1].toLowerCase());
+    }
+    const fresh = FIRST_YEAR_BEATS.filter(([s]) => !used.has(s));
+    let i = 0;
+    while (kept.length < target) {
+      const [scene, caption] = fresh[i] || FIRST_YEAR_BEATS[i % FIRST_YEAR_BEATS.length];
+      i++;
+      kept.push(["panel", `  scene: ${scene}`, `  caption: ${caption}`]);
+    }
+  }
+
+  const pre = _trimTail(preamble).join("\n");
+  const body = kept.map((b) => _trimTail(b).join("\n")).join("\n\n");
+  return (pre ? pre + "\n\n" : "") + body + "\n";
+}
+
 const CCComic = {
   parseScript,
   renderPanel,
   renderComic,
   firstYearTemplate,
+  resizeScript,
+  splitPanels,
+  lengthCount,
   FIRST_YEAR_BEATS,
   LENGTHS,
 };

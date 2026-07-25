@@ -117,11 +117,14 @@ const SCENES = {
   },
 
   // ── First-year (baby) scenes ──────────────────────────────────────────────
-  // A soft, neutral backdrop — good behind an uploaded photo cutout.
+  // Each scene's `art` is the BACKDROP only; `figures` are the castable people
+  // (role + head/cutout centre + default cartoon size). If a photo is cast to a
+  // figure's role, it's drawn there instead of the cartoon.
   studio: {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 210 },
+    figures: [{ role: "baby", x: 220, y: 158, s: 1.9, r: 54 }],
     art: (i) =>
       bg(i, "#fff2f8", "#ffe0ef") +
       `<g class="cc-float">${CC.heart(70, 80, 9, "#ffb3c6")}${CC.heart(372, 100, 8, "#ff8fb3")}${CC.twinkle(120, 220, 5, "#ffd884")}</g>`,
@@ -131,44 +134,44 @@ const SCENES = {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 90 },
+    figures: [{ role: "baby", x: 210, y: 196, s: 0.8, r: 22 }],
     art: (i) =>
       room(i, "#fbe7f2", "#f6d3e6", "#e8c8b0") +
       CC.moon(360, 70, 16) +
       `<g class="cc-tw">${CC.twinkle(320, 60, 4, "#ffd884")}${CC.twinkle(392, 96, 3, "#ffd884")}</g>` +
-      CC.crib(210, 210, 1.15) +
-      CC.baby(210, 196, 0.8),
+      CC.crib(210, 210, 1.15),
   },
 
   "first-smile": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 210 },
+    figures: [{ role: "baby", x: 220, y: 150, s: 2.6, r: 68 }],
     art: (i) =>
       bg(i, "#fff2f8", "#ffdff0") +
-      `<g class="cc-float">${CC.heart(70, 80, 10, "#ff8fb3")}${CC.heart(370, 110, 8, "#ff6ea8")}${CC.heart(120, 220, 7, "#ffa6c6")}</g>` +
-      CC.baby(220, 150, 2.6),
+      `<g class="cc-float">${CC.heart(70, 80, 10, "#ff8fb3")}${CC.heart(370, 110, 8, "#ff6ea8")}${CC.heart(120, 220, 7, "#ffa6c6")}</g>`,
   },
 
   "bath-time": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 350, y: 120 },
+    figures: [{ role: "baby", x: 220, y: 196, s: 0.9, r: 24 }],
     art: (i) =>
       room(i, "#e3f4ff", "#c9e8ff", "#bfe0f2") +
       `<g class="cc-float">${CC.twinkle(90, 90, 5, "#ffffff")}${CC.twinkle(360, 80, 4, "#ffffff")}</g>` +
       `<ellipse cx="220" cy="236" rx="120" ry="34" fill="#8fd0ff" stroke="#0b0f18" stroke-width="1.5"/>` +
       `<circle cx="180" cy="210" r="10" fill="#dff3ff" opacity="0.8"/>` +
-      `<circle cx="266" cy="216" r="8" fill="#dff3ff" opacity="0.8"/>` +
-      CC.baby(220, 196, 0.9),
+      `<circle cx="266" cy="216" r="8" fill="#dff3ff" opacity="0.8"/>`,
   },
 
   "first-food": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 120, y: 110 },
+    figures: [{ role: "baby", x: 180, y: 176, s: 1.2, r: 32 }],
     art: (i) =>
       room(i, "#fff6e0", "#ffe9bd", "#e8c89a") +
-      CC.baby(180, 176, 1.2) +
       CC.bottle(320, 168, 1.2) +
       `<ellipse cx="180" cy="238" rx="70" ry="14" fill="#c98a52" opacity="0.5"/>`,
   },
@@ -177,9 +180,9 @@ const SCENES = {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 350, y: 210 },
+    figures: [{ role: "baby", x: 180, y: 196, s: 1.15, r: 30 }],
     art: (i) =>
       room(i, "#eafbe7", "#cdeecb", "#bfe0b0") +
-      CC.baby(180, 196, 1.15) +
       CC.balloon(360, 150, "#7ec8ff", 0.8) +
       `<circle cx="300" cy="238" r="12" fill="#ff8fb3" stroke="#0b0f18" stroke-width="1.4"/>`,
   },
@@ -188,10 +191,10 @@ const SCENES = {
     wide: false,
     bubble: SIDE_BUBBLE,
     sfx: { x: 110, y: 110 },
+    figures: [{ role: "baby", x: 150, y: 176, s: 1.25, r: 32 }],
     art: (i) =>
       room(i, "#fef3ff", "#f0d9ff", "#d9c3ef") +
       `<g class="cc-float">${CC.twinkle(90, 90, 6, "#ffd884")}${CC.twinkle(360, 120, 4, "#ffd884")}</g>` +
-      CC.baby(150, 176, 1.25) +
       CC.heart(300, 150, 12, "#ff6ea8"),
   },
 
@@ -199,49 +202,52 @@ const SCENES = {
     wide: true,
     bubble: SIDE_BUBBLE,
     sfx: { x: 70, y: 80 },
+    figures: [{ role: "baby", x: 118, y: 152, s: 1.1, r: 30 }],
     art: (i) =>
       room(i, "#fff0f6", "#ffe0ef", "#f0cfe0") +
       `<g class="cc-float">${CC.balloon(70, 120, "#ff6ea8", 1)}${CC.balloon(115, 150, "#ffd15c", 0.9)}${CC.balloon(372, 120, "#7ec8ff", 1)}${CC.balloon(330, 150, "#8ee6a0", 0.9)}</g>` +
-      CC.cake(220, 210, 1.3, 1) +
-      CC.heart(220, 70, 12, "#ff6ea8"),
+      CC.cake(240, 210, 1.3, 1) +
+      CC.heart(240, 70, 12, "#ff6ea8"),
   },
 
   "park-day": {
     wide: true,
     bubble: SIDE_BUBBLE,
     sfx: { x: 360, y: 90 },
+    figures: [{ role: "baby", x: 220, y: 206, s: 1.1, r: 30 }],
     art: (i) =>
       sky(i, "#bfe9ff", "#e8f8ff") +
       CC.sun(70, 66, 24) +
       `<g class="cc-float">${CC.cloud(300, 70, 1)}${CC.cloud(180, 46, 0.7)}</g>` +
       CC.hill("#8fd08a") +
       CC.flower(90, 250, 1) +
-      CC.flower(360, 256, 0.9, "#ffd15c") +
-      CC.baby(220, 214, 1.1),
+      CC.flower(360, 256, 0.9, "#ffd15c"),
   },
 
   bedtime: {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 210 },
+    figures: [{ role: "baby", x: 210, y: 196, s: 0.8, r: 22, mood: "sleep" }],
     art: (i) =>
       room(i, "#20264a", "#2f2f5e", "#3a2f52") +
       CC.stars(60 + i, 40, 440, 210) +
       CC.moon(360, 70, 20) +
-      CC.crib(210, 210, 1.15) +
-      CC.baby(210, 196, 0.8, "sleep"),
+      CC.crib(210, 210, 1.15),
   },
 
   family: {
     wide: true,
     bubble: SIDE_BUBBLE,
     sfx: { x: 70, y: 80 },
+    figures: [
+      { role: "parent1", x: 120, y: 186, s: 1.9, r: 30 },
+      { role: "parent2", x: 320, y: 186, s: 1.9, r: 30 },
+      { role: "baby", x: 220, y: 210, s: 1, r: 26 },
+    ],
     art: (i) =>
       room(i, "#fff3e6", "#ffe6cf", "#e8c8a8") +
-      `<g class="cc-float">${CC.heart(70, 80, 12, "#ff6ea8")}${CC.heart(372, 96, 10, "#ff8fb3")}</g>` +
-      CC.kid(120, 250, 1.9) +
-      CC.kid(320, 250, 1.9) +
-      CC.baby(220, 214, 1),
+      `<g class="cc-float">${CC.heart(70, 80, 12, "#ff6ea8")}${CC.heart(372, 96, 10, "#ff8fb3")}</g>`,
   },
 
   // ── More first-year moments ────────────────────────────────────────────────
@@ -249,19 +255,19 @@ const SCENES = {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 210 },
+    figures: [{ role: "baby", x: 220, y: 150, s: 2.4, r: 64, mood: "sleep" }],
     art: (i) =>
       bg(i, "#fff4ea", "#ffe6d6") +
-      `<g class="cc-float">${CC.heart(80, 90, 9, "#ff8fb3")}${CC.heart(360, 110, 8, "#ff6ea8")}</g>` +
-      CC.baby(220, 150, 2.4, "sleep"),
+      `<g class="cc-float">${CC.heart(80, 90, 9, "#ff8fb3")}${CC.heart(360, 110, 8, "#ff6ea8")}</g>`,
   },
 
   peekaboo: {
     wide: false,
     bubble: SIDE_BUBBLE,
     sfx: { x: 90, y: 90 },
+    figures: [{ role: "baby", x: 220, y: 160, s: 1.9, r: 50 }],
     art: (i) =>
       bg(i, "#fff2f8", "#ffe0ef") +
-      CC.baby(220, 160, 1.9) +
       `<g stroke="#0b0f18" stroke-width="1.5" fill="#ffe0c2">` +
       `<path d="M150 150 q-24 -6 -30 30 q30 8 42 -14 Z"/>` +
       `<path d="M290 150 q24 -6 30 30 q-30 8 -42 -14 Z"/></g>`,
@@ -271,10 +277,10 @@ const SCENES = {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 350, y: 210 },
+    figures: [{ role: "baby", x: 200, y: 208, s: 1.1, r: 30 }],
     art: (i) =>
       room(i, "#eafff2", "#cdefdd", "#bfe0c6") +
       `<rect x="120" y="220" width="200" height="34" rx="8" fill="#ffd9ec" opacity="0.7"/>` +
-      CC.baby(200, 210, 1.1) +
       `<circle cx="320" cy="232" r="12" fill="#7ec8ff" stroke="#0b0f18" stroke-width="1.4"/>`,
   },
 
@@ -282,20 +288,19 @@ const SCENES = {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 90, y: 100 },
+    figures: [{ role: "baby", x: 150, y: 186, s: 1.15, r: 30 }],
     art: (i) =>
-      room(i, "#fff7e6", "#ffe9c2", "#e8cfa0") +
-      CC.baby(150, 186, 1.15) +
-      CC.blocks(320, 214, 1.1),
+      room(i, "#fff7e6", "#ffe9c2", "#e8cfa0") + CC.blocks(320, 214, 1.1),
   },
 
   "story-time": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 100 },
+    figures: [{ role: "baby", x: 150, y: 190, s: 1.1, r: 30 }],
     art: (i) =>
       room(i, "#f1ecff", "#ddd0ff", "#c9bde8") +
       `<g class="cc-float">${CC.twinkle(90, 90, 5, "#ffd884")}${CC.twinkle(360, 110, 4, "#ffd884")}</g>` +
-      CC.baby(150, 190, 1.1) +
       CC.book(300, 210, 1.4),
   },
 
@@ -303,48 +308,49 @@ const SCENES = {
     wide: true,
     bubble: SIDE_BUBBLE,
     sfx: { x: 360, y: 80 },
+    figures: [{ role: "baby", x: 150, y: 232, s: 1.1, r: 30 }],
     art: (i) =>
       sky(i, "#bfe9ff", "#e8f8ff") +
       CC.sun(380, 60, 22) +
       `<g class="cc-float">${CC.cloud(120, 56, 0.8)}</g>` +
       `<rect x="0" y="180" width="440" height="50" fill="#6fc7e8"/>` +
       `<rect x="0" y="222" width="440" height="78" fill="#f2e0b0"/>` +
-      CC.sandcastle(320, 236, 1.1) +
-      CC.baby(150, 232, 1.1),
+      CC.sandcastle(320, 236, 1.1),
   },
 
   "snow-day": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 360, y: 90 },
+    figures: [{ role: "baby", x: 150, y: 232, s: 1, r: 28 }],
     art: (i) =>
       bg(i, "#cfe0f2", "#e8f0f8") +
       CC.stars(80 + i, 40, 440, 260).replace(/opacity="[^"]+"/g, 'opacity="0.9"') +
       `<rect x="0" y="250" width="440" height="50" fill="#f4f8ff"/>` +
-      CC.snowman(320, 236, 1) +
-      CC.baby(150, 232, 1),
+      CC.snowman(320, 236, 1),
   },
 
   "pet-friend": {
     wide: false,
     bubble: TOP_BUBBLE,
     sfx: { x: 350, y: 210 },
+    figures: [
+      { role: "baby", x: 160, y: 196, s: 1.05, r: 28 },
+      { role: "pet", x: 300, y: 206, s: 1.2, r: 28 },
+    ],
     art: (i) =>
-      room(i, "#fff3e6", "#ffe6cf", "#e8c8a8") +
-      CC.baby(160, 200, 1.05) +
-      CC.dog(300, 214, 1.2) +
-      CC.heart(230, 150, 10, "#ff6ea8"),
+      room(i, "#fff3e6", "#ffe6cf", "#e8c8a8") + CC.heart(230, 150, 10, "#ff6ea8"),
   },
 
   holiday: {
     wide: true,
     bubble: SIDE_BUBBLE,
     sfx: { x: 360, y: 90 },
+    figures: [{ role: "baby", x: 300, y: 210, s: 1.05, r: 28 }],
     art: (i) =>
       room(i, "#f6e9ef", "#e9d3df", "#d8b8c6") +
       `<g class="cc-float">${CC.twinkle(80, 70, 5, "#ffd884")}${CC.twinkle(360, 90, 4, "#ffd884")}</g>` +
-      CC.tree(110, 220, 1.15) +
-      CC.baby(300, 214, 1.05),
+      CC.tree(110, 220, 1.15),
   },
 };
 
@@ -361,7 +367,42 @@ const GROUPS = {
   ],
 };
 
-const CCScenes = { SCENES, list: Object.keys(SCENES), groups: GROUPS };
+// Where an uploaded person cutout naturally sits in each scene {x, y, r}, so a
+// photo lands in the crib / on the hill / in the tub, at a fitting size.
+const PERSON = {
+  studio: { x: 220, y: 160, r: 92 },
+  nursery: { x: 210, y: 188, r: 50 },
+  newborn: { x: 220, y: 150, r: 92 },
+  "first-smile": { x: 220, y: 150, r: 94 },
+  peekaboo: { x: 220, y: 158, r: 74 },
+  "bath-time": { x: 220, y: 198, r: 54 },
+  "tummy-time": { x: 205, y: 206, r: 58 },
+  "first-food": { x: 180, y: 176, r: 60 },
+  playtime: { x: 150, y: 186, r: 64 },
+  "story-time": { x: 150, y: 190, r: 62 },
+  crawling: { x: 180, y: 196, r: 62 },
+  "first-steps": { x: 150, y: 176, r: 66 },
+  "pet-friend": { x: 160, y: 200, r: 58 },
+  "park-day": { x: 220, y: 206, r: 66 },
+  "beach-day": { x: 150, y: 226, r: 58 },
+  "snow-day": { x: 150, y: 224, r: 56 },
+  "first-birthday": { x: 118, y: 150, r: 66 },
+  holiday: { x: 300, y: 204, r: 60 },
+  bedtime: { x: 210, y: 188, r: 48 },
+  family: { x: 220, y: 206, r: 58 },
+};
+const DEFAULT_PERSON = { x: 220, y: 168, r: 86 };
+
+function personAnchor(scene) {
+  return PERSON[scene] || DEFAULT_PERSON;
+}
+
+const CCScenes = {
+  SCENES,
+  list: Object.keys(SCENES),
+  groups: GROUPS,
+  personAnchor,
+};
 
 if (typeof module !== "undefined" && module.exports) module.exports = CCScenes;
 if (typeof window !== "undefined") window.CCScenes = CCScenes;
