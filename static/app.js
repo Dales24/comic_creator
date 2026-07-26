@@ -12,6 +12,9 @@
     images: "cc_images_v1",
     cast: "cc_cast_v1",
     cartoon: "cc_cartoon_v1",
+    ai: "cc_ai_on_v1",
+    aikey: "cc_ai_key_v1",
+    aiimages: "cc_ai_images_v1",
   };
 
   // Which uploaded photo plays each character role.
@@ -68,6 +71,17 @@ panel
   const cartoons = {};
   let cartoonOn = localStorage.getItem(KEY.cartoon) !== "off";
   let images = {};
+
+  // Optional OpenAI redraw: name → AI-generated data URL. When present for an
+  // image it overrides both the original and the offline cartoon. Persisted, so
+  // a redraw (which costs money) is never repeated for free.
+  let aiImages = {};
+  try {
+    aiImages = JSON.parse(localStorage.getItem(KEY.aiimages) || "{}");
+  } catch {
+    aiImages = {};
+  }
+  let aiOn = localStorage.getItem(KEY.ai) === "on";
 
   // Casting: role → uploaded image name (baby/parent1/parent2/pet).
   let cast = {};
@@ -225,11 +239,14 @@ panel
     });
   }
 
-  // Rebuild the render map from the originals (cartoonified or not).
+  // Rebuild the render map from the originals. Precedence per image:
+  // an OpenAI redraw (if one exists) → the offline cartoon (if on) → the raw photo.
   async function rebuildImages() {
     images = {};
     for (const name of Object.keys(originals)) {
-      if (cartoonOn) {
+      if (aiImages[name]) {
+        images[name] = aiImages[name];
+      } else if (cartoonOn) {
         if (!cartoons[name]) cartoons[name] = await cartoonify(originals[name]);
         images[name] = cartoons[name];
       } else {
@@ -238,6 +255,84 @@ panel
     }
     renderLibrary();
     render();
+  }
+
+  function saveAiImages() {
+    try {
+      localStorage.setItem(KEY.aiimages, JSON.stringify(aiImages));
+    } catch {
+      // Storage full — the redraw stays for this session but won't persist.
+    }
+  }
+
+  // Redraw a photo as a cartoon via OpenAI's image model. The key and the photo
+  // are sent to OpenAI; nothing else leaves the browser. Returns a data URL.
+  async function aiRedraw(dataURL) {
+    const key = (localStorage.getItem(KEY.aikey) || "").trim();
+    if (!key) throw new Error("Add your OpenAI API key first.");
+    const blob = await (await fetch(dataURL)).blob();
+    const form = new FormData();
+    form.append("model", "gpt-image-1");
+    form.append("image", blob, "photo.png");
+    form.append(
+      "prompt",
+      "Redraw the person in this photo as a cute, friendly flat cartoon " +
+        "character for a children's comic book: bold clean black outlines, " +
+        "simple cel shading, bright flat colors, plain white background. Keep " +
+        "their likeness, hair, and outfit."
+    );
+    form.append("size", "1024x1024");
+    const resp = await fetch("https://api.openai.com/v1/images/edits", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key },
+      body: form,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      throw new Error((data.error && data.error.message) || `OpenAI error ${resp.status}`);
+    }
+    const b64 = data.data && data.data[0] && data.data[0].b64_json;
+    if (!b64) throw new Error("OpenAI returned no image.");
+    // Shrink the 1024px PNG before we store it, to stay under localStorage limits.
+    return downscaleDataURL("data:image/png;base64," + b64);
+  }
+
+  // Downscale a data URL (canvas → JPEG) without needing a File, for AI results.
+  function downscaleDataURL(dataURL, maxDim = 640) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(c.toDataURL("image/jpeg", 0.9));
+      };
+      img.onerror = () => resolve(dataURL);
+      img.src = dataURL;
+    });
+  }
+
+  // Redraw one library image with OpenAI, showing progress on its button.
+  async function redrawImage(name, btn) {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "…";
+    }
+    try {
+      aiImages[name] = await aiRedraw(originals[name]);
+      saveAiImages();
+      await rebuildImages(); // re-renders the library (button is recreated)
+    } catch (e) {
+      alert("AI redraw failed: " + e.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "✨ AI";
+      }
+    }
   }
 
   function slug(s) {
@@ -311,7 +406,13 @@ panel
           (r) => `<option value="${r.id}"${r.id === current ? " selected" : ""}>${r.label}</option>`
         ).join("");
       const card = document.createElement("div");
-      card.className = "photo-card" + (current ? " cast" : "");
+      card.className = "photo-card" + (current ? " cast" : "") + (aiImages[name] ? " ai" : "");
+      // The AI button only appears when the OpenAI redraw option is enabled.
+      const aiBtn = aiOn
+        ? aiImages[name]
+          ? `<button data-act="ai-clear" title="Undo AI redraw">↩ AI</button>`
+          : `<button data-act="ai" title="Redraw with OpenAI">✨ AI</button>`
+        : "";
       card.innerHTML =
         `<img src="${thumb}" alt="${name}" />` +
         `<span class="photo-name" title="${name}">${name}</span>` +
@@ -319,6 +420,7 @@ panel
         `<div class="photo-actions">` +
         `<button data-act="person">Person</button>` +
         `<button data-act="scene">Scene</button>` +
+        aiBtn +
         `<button data-act="del" class="del" title="Delete">×</button>` +
         `</div>`;
       card.querySelector(".cast-select").onchange = (e) => castImage(name, e.target.value);
@@ -326,12 +428,23 @@ panel
         insertText(`\npanel\n  scene: studio\n  photo: ${name}\n  caption: \n`);
       card.querySelector('[data-act="scene"]').onclick = () =>
         insertText(`\npanel\n  background: ${name}\n  caption: \n`);
+      const aiRun = card.querySelector('[data-act="ai"]');
+      if (aiRun) aiRun.onclick = () => redrawImage(name, aiRun);
+      const aiClear = card.querySelector('[data-act="ai-clear"]');
+      if (aiClear)
+        aiClear.onclick = () => {
+          delete aiImages[name];
+          saveAiImages();
+          rebuildImages();
+        };
       card.querySelector('[data-act="del"]').onclick = () => {
         delete originals[name];
         delete cartoons[name];
+        delete aiImages[name];
         delete images[name];
         for (const r of ROLES) if (cast[r.id] === name) delete cast[r.id];
         saveOriginals();
+        saveAiImages();
         saveCast();
         renderLibrary();
         render();
@@ -363,6 +476,31 @@ panel
       localStorage.setItem(KEY.cartoon, cartoonOn ? "on" : "off");
       rebuildImages();
     });
+  }
+
+  // Optional OpenAI redraw: a toggle that reveals a key field and puts an
+  // "✨ AI" button on each photo. Off by default (it costs money + sends photos).
+  const aiChk = document.getElementById("chk-ai");
+  const aiKeyInput = document.getElementById("ai-key");
+  const aiSettings = document.getElementById("ai-settings");
+  const syncAiUI = () => {
+    if (aiSettings) aiSettings.style.display = aiOn ? "flex" : "none";
+  };
+  if (aiChk) {
+    aiChk.checked = aiOn;
+    syncAiUI();
+    aiChk.addEventListener("change", () => {
+      aiOn = aiChk.checked;
+      localStorage.setItem(KEY.ai, aiOn ? "on" : "off");
+      syncAiUI();
+      renderLibrary(); // show/hide the per-photo AI buttons
+    });
+  }
+  if (aiKeyInput) {
+    aiKeyInput.value = localStorage.getItem(KEY.aikey) || "";
+    aiKeyInput.addEventListener("change", () =>
+      localStorage.setItem(KEY.aikey, aiKeyInput.value.trim())
+    );
   }
 
   // ── theme picker ────────────────────────────────────────────────────────────

@@ -52,8 +52,19 @@
             <label class="toggle cartoon-toggle">
               <input type="checkbox" id="chk-cartoon" checked /> Cartoonify
             </label>
+            <label class="toggle ai-toggle">
+              <input type="checkbox" id="chk-ai" /> AI redraw (OpenAI)
+            </label>
             <button id="btn-upload" class="btn">＋ Upload image</button>
             <input id="file-input" type="file" accept="image/*" multiple hidden />
+          </div>
+          <div id="ai-settings" class="ai-row" style="display: none">
+            <label for="ai-key">OpenAI key</label>
+            <input id="ai-key" type="password" placeholder="sk-…" autocomplete="off" />
+            <span class="ai-note">
+              stored only in your browser · each redraw sends that photo to OpenAI
+              and costs a few cents. Then press <em>✨ AI</em> on a photo.
+            </span>
           </div>
           <div id="photo-list" class="photo-list"></div>
           <p class="photos-hint">

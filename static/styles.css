@@ -132,6 +132,35 @@ body {
 .photos-head .btn {
   margin-left: 8px;
 }
+.ai-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+.ai-row label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ai-row input[type="password"] {
+  flex: 0 1 200px;
+  padding: 5px 8px;
+  border: 1px solid var(--line, #d8d3ea);
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+}
+.ai-note {
+  flex: 1 1 220px;
+  color: var(--muted);
+  opacity: 0.85;
+}
+.photo-card.ai {
+  outline: 2px solid #6ec1ff;
+}
 .photo-list {
   display: flex;
   flex-wrap: wrap;
